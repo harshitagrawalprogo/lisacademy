@@ -1,0 +1,45 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Generated deployment bundles
+*.zip
+bluehost-node-deploy-package/
+BLUEHOST_DEPLOY_README.txt
+
+# Source/reference documents that are not used by the app build
+*.docx
+
+# Root-level design/source images duplicated under public/
+/Copy of 1326 LISA Life Membership Certificates*.png
+/ID card template-02*.png
+/No_sign_volunteer-01.png
+/withsign_volunteer-01.png
+/rawwithousign.png
+/image.png
+
+# Environment variables (Supabase keys etc.)
+.env
+.env.*
+!.env.example
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

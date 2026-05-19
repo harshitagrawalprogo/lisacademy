@@ -9,7 +9,7 @@ const navLinks = [
   { name: "Governance", path: "/governance" },
   { name: "Program", path: "/programs" },
   { name: "Events", path: "/events" },
-  { name: "Lisacon events", path: "https://www.lisacon.org/", external: true },
+  { name: "LISACON Events", path: "https://www.lisacon.org/", external: true },
   { name: "Community", path: "/community" },
   { name: "Blog", path: "/blog" },
   { name: "LISATube", path: "/lisatube" },
@@ -21,7 +21,10 @@ interface NavbarProps {
   topOffset?: number;
 }
 
-export default function Navbar({ topBarHeight = 0, topOffset = 0 }: NavbarProps) {
+export default function Navbar({
+  topBarHeight = 0,
+  topOffset = 0,
+}: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrollPos, setScrollPos] = useState(0);
@@ -34,7 +37,7 @@ export default function Navbar({ topBarHeight = 0, topOffset = 0 }: NavbarProps)
       const current = window.scrollY;
       setScrollPos(current);
       setScrolled(current > 20);
-      
+
       // Hide on scroll down, show on scroll up
       if (current > lastScroll && current > 100) {
         setNavVisible(false); // scrolling down
@@ -70,8 +73,11 @@ export default function Navbar({ topBarHeight = 0, topOffset = 0 }: NavbarProps)
         {/* Desktop nav links – centered */}
         <div className="hidden lg:flex items-center gap-0.5">
           {navLinks.map((link) => {
-            const isActive = !link.external && (location.pathname === link.path || link.dropdown?.some(sub => location.pathname === sub.path));
-            
+            const isActive =
+              !link.external &&
+              (location.pathname === link.path ||
+                link.dropdown?.some((sub) => location.pathname === sub.path));
+
             return (
               <div key={link.name} className="relative group">
                 {link.dropdown ? (
@@ -84,7 +90,11 @@ export default function Navbar({ topBarHeight = 0, topOffset = 0 }: NavbarProps)
                           : "text-white/80 hover:text-white hover:bg-white/10"
                       }`}
                     >
-                      {link.name} <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-200" />
+                      {link.name}{" "}
+                      <ChevronDown
+                        size={14}
+                        className="group-hover:rotate-180 transition-transform duration-200"
+                      />
                     </Link>
                     <div className="absolute left-0 top-full pt-1 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200">
                       <div className="bg-[#0d1b3e] border border-white/10 rounded-lg shadow-xl overflow-hidden w-48 flex flex-col py-1 mt-1">
@@ -135,7 +145,9 @@ export default function Navbar({ topBarHeight = 0, topOffset = 0 }: NavbarProps)
             <Button
               size="sm"
               className="rounded-lg font-semibold text-[#0d1b3e] hover:-translate-y-0.5 transition-all"
-              style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)" }}
+              style={{
+                background: "linear-gradient(135deg, #f0d080, #c9a84c)",
+              }}
             >
               Become a Member
             </Button>
@@ -145,7 +157,11 @@ export default function Navbar({ topBarHeight = 0, topOffset = 0 }: NavbarProps)
         {/* Mobile: logo + toggle */}
         <div className="lg:hidden flex items-center justify-between w-full">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="LIS Academy" className="h-8 w-auto object-contain" />
+            <img
+              src="/logo.png"
+              alt="LIS Academy"
+              className="h-8 w-auto object-contain"
+            />
             <span className="font-bold text-white text-base">LIS Academy</span>
           </Link>
           <button
@@ -218,7 +234,9 @@ export default function Navbar({ topBarHeight = 0, topOffset = 0 }: NavbarProps)
                 <Link to="/membership">
                   <Button
                     className="w-full font-semibold text-[#0d1b3e]"
-                    style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)" }}
+                    style={{
+                      background: "linear-gradient(135deg, #f0d080, #c9a84c)",
+                    }}
                   >
                     Become a Member
                   </Button>

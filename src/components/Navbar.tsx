@@ -9,6 +9,7 @@ const navLinks = [
   { name: "Governance", path: "/governance" },
   { name: "Program", path: "/programs" },
   { name: "Events", path: "/events" },
+  { name: "Lisacon events", path: "https://www.lisacon.org/", external: true },
   { name: "Community", path: "/community" },
   { name: "Blog", path: "/blog" },
   { name: "LISATube", path: "/lisatube" },
@@ -69,7 +70,7 @@ export default function Navbar({ topBarHeight = 0, topOffset = 0 }: NavbarProps)
         {/* Desktop nav links – centered */}
         <div className="hidden lg:flex items-center gap-0.5">
           {navLinks.map((link) => {
-            const isActive = location.pathname === link.path || link.dropdown?.some(sub => location.pathname === sub.path);
+            const isActive = !link.external && (location.pathname === link.path || link.dropdown?.some(sub => location.pathname === sub.path));
             
             return (
               <div key={link.name} className="relative group">
@@ -103,6 +104,15 @@ export default function Navbar({ topBarHeight = 0, topOffset = 0 }: NavbarProps)
                       </div>
                     </div>
                   </div>
+                ) : link.external ? (
+                  <a
+                    href={link.path}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 text-white/80 hover:text-white hover:bg-white/10"
+                  >
+                    {link.name}
+                  </a>
                 ) : (
                   <Link
                     to={link.path}
@@ -181,6 +191,15 @@ export default function Navbar({ topBarHeight = 0, topOffset = 0 }: NavbarProps)
                         ))}
                       </div>
                     </>
+                  ) : link.external ? (
+                    <a
+                      href={link.path}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block px-3 py-2.5 text-sm font-medium rounded-md transition-colors text-white/70 hover:text-white hover:bg-white/8"
+                    >
+                      {link.name}
+                    </a>
                   ) : (
                     <Link
                       to={link.path}

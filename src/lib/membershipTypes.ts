@@ -64,6 +64,24 @@ export interface Member {
   issue_date?: string;
 }
 
+export type AdminMemberDraftValues = Pick<
+  Member,
+  | "name"
+  | "email"
+  | "phone"
+  | "category"
+  | "custom_detail"
+  | "designation"
+  | "institution"
+  | "address"
+  | "city"
+  | "state"
+  | "pincode"
+  | "membership_tier"
+> & {
+  certificate_draft_data_url?: string;
+};
+
 export interface SiteContent {
   id: string;
   section: string;

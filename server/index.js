@@ -234,6 +234,46 @@ function validateRegistration(body) {
   }
 }
 
+function validateMemberDraftValues(body) {
+  const values = {
+    name: String(body.name || "").trim(),
+    email: String(body.email || "").trim(),
+    phone: String(body.phone || "").trim(),
+    category: String(body.category || "").trim(),
+    custom_detail: String(body.custom_detail || "").trim(),
+    designation: String(body.designation || "").trim(),
+    institution: String(body.institution || "").trim(),
+    address: String(body.address || "").trim(),
+    city: String(body.city || "").trim(),
+    state: String(body.state || "").trim(),
+    pincode: String(body.pincode || "").trim(),
+    membership_tier: String(body.membership_tier || "").trim(),
+    certificate_draft_data_url: String(body.certificate_draft_data_url || "").trim(),
+  };
+
+  assertRequired(values.name, "Full name");
+  assertRequired(values.email, "Email");
+  assertRequired(values.phone, "Phone number");
+  assertRequired(values.category, "Category");
+  assertRequired(values.custom_detail, "Custom detail");
+  assertRequired(values.designation, "Designation");
+  assertRequired(values.institution, "Institution");
+  assertRequired(values.address, "Address");
+  assertRequired(values.city, "City");
+  assertRequired(values.state, "State");
+  assertRequired(values.pincode, "PIN code");
+
+  if (!MEMBERSHIP_TIERS.has(values.membership_tier)) {
+    throw new Error("Invalid membership tier.");
+  }
+
+  if (!MEMBER_CATEGORIES.has(values.category)) {
+    throw new Error("Invalid member category.");
+  }
+
+  return values;
+}
+
 async function generateMembershipIdentity() {
   const rows = await sql`
     SELECT candidate AS membership_number
@@ -915,6 +955,50 @@ app.get("/api/admin/members/:id", requireAdmin, async (req, res) => {
     res.json({ member: publicMember(rows[0]) });
   } catch {
     res.status(500).json({ error: "Failed to load member." });
+  }
+});
+
+app.patch("/api/admin/members/:id/draft-values", requireAdmin, async (req, res) => {
+  try {
+    const values = validateMemberDraftValues(req.body);
+    const emailRows = await sql`
+      SELECT id FROM members
+      WHERE lower(email) = ${values.email.toLowerCase()} AND id <> ${req.params.id}
+      LIMIT 1
+    `;
+    if (emailRows.length > 0) {
+      return res.status(409).json({ error: "Another member already uses this email." });
+    }
+
+    const rows = await sql`
+      UPDATE members
+      SET name = ${values.name},
+          email = ${values.email},
+          phone = ${values.phone},
+          category = ${values.category},
+          custom_detail = ${values.custom_detail},
+          designation = ${values.designation},
+          institution = ${values.institution},
+          address = ${values.address},
+          city = ${values.city},
+          state = ${values.state},
+          pincode = ${values.pincode},
+          membership_tier = ${values.membership_tier},
+          certificate_draft_data_url = ${values.certificate_draft_data_url || null},
+          certificate_data_url = NULL,
+          certificate_template_version = NULL,
+          certificate_submitted_at = COALESCE(certificate_submitted_at, NOW())
+      WHERE id = ${req.params.id}
+      RETURNING *
+    `;
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Member not found." });
+    }
+
+    res.json({ member: publicMember(rows[0]) });
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : "Failed to update draft values." });
   }
 });
 

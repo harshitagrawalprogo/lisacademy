@@ -1,5 +1,5 @@
 import { apiRequest, clearMemberToken, getMemberToken, setMemberToken, getAdminToken, setAdminToken, clearAdminToken } from "./api";
-import type { Member, MembershipTier, MemberStatus, VolunteerStatus, LifeCertificateEditorState } from "./membershipTypes";
+import type { AdminMemberDraftValues, Member, MembershipTier, MemberStatus, VolunteerStatus, LifeCertificateEditorState } from "./membershipTypes";
 import { LIFE_CERTIFICATE_TEMPLATE_VERSION, VOLUNTEER_CERTIFICATE_TEMPLATE_VERSION } from "./certificateGenerator";
 export { MEMBERSHIP_TIERS, TIER_COLORS } from "./membershipTypes";
 
@@ -152,8 +152,13 @@ export async function updateMemberCertificateEditorState(
   return response.member;
 }
 
-export async function updateMember(): Promise<void> {
-  throw new Error("Member updates are not implemented in this flow yet.");
+export async function updateMemberDraftValues(id: string, input: AdminMemberDraftValues): Promise<Member> {
+  const response = await apiRequest<{ member: Member }>(`/api/admin/members/${id}/draft-values`, {
+    method: "PATCH",
+    headers: adminHeaders(),
+    body: JSON.stringify(input),
+  });
+  return response.member;
 }
 
 export async function deleteMember(id: string): Promise<void> {

@@ -3,9 +3,36 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Award, Check, CreditCard, Download, Printer, Save, X } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { getMemberById, updateMemberCertificateEditorState, updateMemberStatus, updateVolunteerStatus } from "@/lib/membershipDb";
-import { generateCertificate, generateIdCard, generateVolunteerCertificate, getLifeCertificateSettings, normalizeLifeCertificateEditorState, printImage } from "@/lib/certificateGenerator";
-import type { LifeCertificateEditorState, Member } from "@/lib/membershipTypes";
+import { MEMBERSHIP_TIERS, getMemberById, updateMemberCertificateEditorState, updateMemberDraftValues, updateMemberStatus, updateVolunteerStatus } from "@/lib/membershipDb";
+import { generateCertificate, generateIdCard, generateLifeCertificateDraft, generateVolunteerCertificate, getLifeCertificateSettings, normalizeLifeCertificateEditorState, printImage } from "@/lib/certificateGenerator";
+import type { AdminMemberDraftValues, LifeCertificateEditorState, Member, MembershipTier } from "@/lib/membershipTypes";
+
+const MEMBER_CATEGORIES = [
+  "Librarian / Library Staff",
+  "LIS Teacher",
+  "LIS Student",
+  "LIS Research Scholar",
+  "Retired LIS Professional",
+  "Others",
+] as const;
+
+function getDraftValues(member: Member): AdminMemberDraftValues {
+  return {
+    name: member.name || "",
+    email: member.email || "",
+    phone: member.phone || "",
+    category: member.category || "Librarian / Library Staff",
+    custom_detail: member.custom_detail || "",
+    designation: member.designation || "",
+    institution: member.institution || "",
+    address: member.address || "",
+    city: member.city || "",
+    state: member.state || "",
+    pincode: member.pincode || "",
+    membership_tier: member.membership_tier,
+    certificate_draft_data_url: member.certificate_draft_data_url,
+  };
+}
 
 export default function AdminMemberDetail() {
   const { isAuthenticated } = useAdminAuth();
@@ -21,6 +48,9 @@ export default function AdminMemberDetail() {
   const [activePreview, setActivePreview] = useState<"draft" | "certificate" | "volunteer" | "card">("draft");
   const [editorState, setEditorState] = useState<LifeCertificateEditorState>(normalizeLifeCertificateEditorState());
   const [placementDirty, setPlacementDirty] = useState(false);
+  const [draftValues, setDraftValues] = useState<AdminMemberDraftValues | null>(null);
+  const [draftDirty, setDraftDirty] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     if (!isAuthenticated) navigate("/admin");
@@ -32,8 +62,10 @@ export default function AdminMemberDetail() {
     const current = await getMemberById(id);
     const templateSettings = await getLifeCertificateSettings();
     setMember(current);
+    setDraftValues(current ? getDraftValues(current) : null);
     setEditorState(normalizeLifeCertificateEditorState(templateSettings.editorState));
     setPlacementDirty(false);
+    setDraftDirty(false);
     setLoading(false);
   }, [id]);
 
@@ -41,15 +73,57 @@ export default function AdminMemberDetail() {
     load();
   }, [load]);
 
+  const saveDraftValues = async () => {
+    if (!member || !draftValues) return member;
+    setWorking(true);
+    setMessage("");
+    try {
+      const templateSettings = await getLifeCertificateSettings();
+      const generationEditorState = placementDirty
+        ? editorState
+        : normalizeLifeCertificateEditorState(member.certificate_editor_state || templateSettings.editorState);
+      const draftMember = {
+        ...member,
+        ...draftValues,
+        certificate_editor_state: generationEditorState,
+      };
+      const certificate_draft_data_url = await generateLifeCertificateDraft(draftMember, { editorState: generationEditorState });
+      const saved = await updateMemberDraftValues(member.id, {
+        ...draftValues,
+        certificate_draft_data_url,
+      });
+      const savedWithPlacement = placementDirty
+        ? await updateMemberCertificateEditorState(member.id, generationEditorState)
+        : saved;
+      setMember(savedWithPlacement);
+      setDraftValues(getDraftValues(savedWithPlacement));
+      setEditorState(generationEditorState);
+      setDraftDirty(false);
+      setPlacementDirty(false);
+      setCertUrl(null);
+      setCardFront(null);
+      setCardBack(null);
+      setActivePreview("draft");
+      setMessage("Draft values saved and certificate draft regenerated.");
+      return savedWithPlacement;
+    } finally {
+      setWorking(false);
+    }
+  };
+
   const handleApprove = async () => {
     if (!member) return;
     setWorking(true);
-    if (placementDirty) {
-      await updateMemberCertificateEditorState(member.id, editorState);
+    try {
+      const latestMember = (draftDirty || placementDirty) ? await saveDraftValues() : member;
+      if (latestMember && placementDirty) {
+        await updateMemberCertificateEditorState(latestMember.id, editorState);
+      }
+      await updateMemberStatus(latestMember?.id || member.id, "approved");
+      await load();
+    } finally {
+      setWorking(false);
     }
-    await updateMemberStatus(member.id, "approved");
-    await load();
-    setWorking(false);
   };
 
   const handleReject = async () => {
@@ -137,6 +211,12 @@ export default function AdminMemberDetail() {
     setPlacementDirty(true);
   };
 
+  const updateDraftValue = <K extends keyof AdminMemberDraftValues>(key: K, value: AdminMemberDraftValues[K]) => {
+    setDraftValues((current) => current ? { ...current, [key]: value } : current);
+    setDraftDirty(true);
+    setMessage("");
+  };
+
   const downloadImage = (url: string, filename: string) => {
     const a = document.createElement("a");
     a.href = url;
@@ -189,6 +269,47 @@ export default function AdminMemberDetail() {
                 </div>
               ))}
             </motion.div>
+
+            {draftValues && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Editable Draft Values</h3>
+                    <p className="mt-1 text-xs text-white/40">Correct the fields printed on the member draft before approval.</p>
+                  </div>
+                  <button onClick={saveDraftValues} disabled={working || (!draftDirty && !placementDirty)} className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all disabled:opacity-50" style={{ background: "rgba(201,168,76,0.16)", color: "#c9a84c", border: "1px solid rgba(201,168,76,0.35)" }}>
+                    <Save size={13} /> Save Draft
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  <AdminDraftInput label="Name" value={draftValues.name} onChange={(value) => updateDraftValue("name", value)} />
+                  <AdminDraftInput label="Email" value={draftValues.email} onChange={(value) => updateDraftValue("email", value)} />
+                  <AdminDraftInput label="Phone" value={draftValues.phone} onChange={(value) => updateDraftValue("phone", value)} />
+                  <label className="block">
+                    <span className="mb-1 block text-[10px] uppercase tracking-wider text-white/30">Membership Type</span>
+                    <select value={draftValues.membership_tier} onChange={(event) => updateDraftValue("membership_tier", event.target.value as MembershipTier)} className="w-full rounded-lg border border-white/10 bg-[#10182b] px-3 py-2 text-xs text-white outline-none focus:border-[#c9a84c]/50">
+                      {MEMBERSHIP_TIERS.map((tier) => <option key={tier.value} value={tier.value}>{tier.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-[10px] uppercase tracking-wider text-white/30">Category</span>
+                    <select value={draftValues.category || ""} onChange={(event) => updateDraftValue("category", event.target.value)} className="w-full rounded-lg border border-white/10 bg-[#10182b] px-3 py-2 text-xs text-white outline-none focus:border-[#c9a84c]/50">
+                      {MEMBER_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+                    </select>
+                  </label>
+                  <AdminDraftInput label="Designation" value={draftValues.designation} onChange={(value) => updateDraftValue("designation", value)} />
+                  <AdminDraftInput label="Institution" value={draftValues.institution} onChange={(value) => updateDraftValue("institution", value)} />
+                  <AdminDraftInput label="Certificate Detail" value={draftValues.custom_detail || ""} onChange={(value) => updateDraftValue("custom_detail", value)} multiline />
+                  <div className="grid grid-cols-2 gap-2">
+                    <AdminDraftInput label="City" value={draftValues.city} onChange={(value) => updateDraftValue("city", value)} />
+                    <AdminDraftInput label="State" value={draftValues.state} onChange={(value) => updateDraftValue("state", value)} />
+                  </div>
+                  <AdminDraftInput label="Address" value={draftValues.address} onChange={(value) => updateDraftValue("address", value)} multiline />
+                  <AdminDraftInput label="PIN Code" value={draftValues.pincode} onChange={(value) => updateDraftValue("pincode", value)} />
+                </div>
+                {message && <p className="mt-3 text-xs text-[#c9a84c]">{message}</p>}
+              </motion.div>
+            )}
 
             {member.status === "pending" && (
               <div className="flex gap-3">
@@ -365,6 +486,39 @@ export default function AdminMemberDetail() {
         </div>
       </div>
     </div>
+  );
+}
+
+function AdminDraftInput({
+  label,
+  value,
+  onChange,
+  multiline = false,
+}: {
+  label: string;
+  value?: string;
+  onChange: (value: string) => void;
+  multiline?: boolean;
+}) {
+  const inputClass = "w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-[#c9a84c]/50";
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[10px] uppercase tracking-wider text-white/30">{label}</span>
+      {multiline ? (
+        <textarea
+          value={value || ""}
+          onChange={(event) => onChange(event.target.value)}
+          rows={3}
+          className={`${inputClass} resize-y`}
+        />
+      ) : (
+        <input
+          value={value || ""}
+          onChange={(event) => onChange(event.target.value)}
+          className={inputClass}
+        />
+      )}
+    </label>
   );
 }
 

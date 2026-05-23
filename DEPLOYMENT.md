@@ -24,6 +24,14 @@ Required environment variables:
 - `ADMIN_PASSWORD`
 - `VITE_DONATION_PAYMENT_URL_TEMPLATE`
 
+Use `.env.render.example` as the checklist for Render. The Neon database value should use this host:
+
+```text
+ep-nameless-sun-aoma7gap-pooler.c-2.ap-southeast-1.aws.neon.tech
+```
+
+Keep the full database URL in Render's Environment tab. Do not commit the real password to this repository.
+
 After the first deploy, run the schema once from Render Shell:
 
 ```sh
@@ -54,7 +62,9 @@ Set this Vercel environment variable:
 
 - `VITE_API_BASE_URL=https://YOUR-RENDER-SERVICE.onrender.com`
 
-If you prefer to keep `VITE_API_BASE_URL` empty, update `vercel.json` so `/api/*` rewrites to the current Render service URL. The current file points `/api/*` at `https://lisacademy-api.onrender.com`.
+Use `.env.vercel.example` as the checklist for Vercel. The frontend does not connect to PostgreSQL directly; it calls the Render API. Keep `DATABASE_URL`, `JWT_SECRET`, `ADMIN_USERNAME`, and `ADMIN_PASSWORD` on Render only unless you later add Vercel serverless API routes.
+
+If you prefer to keep `VITE_API_BASE_URL` empty, `vercel.json` already rewrites `/api/*` to the current Render service URL: `https://lisacademy-api.onrender.com`.
 
 After deploying Vercel, test the frontend from the browser. If you are using the `vercel.json` rewrite instead of `VITE_API_BASE_URL`, you can also test:
 

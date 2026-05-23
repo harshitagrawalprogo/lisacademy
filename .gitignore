@@ -32,6 +32,8 @@ BLUEHOST_DEPLOY_README.txt
 .env
 .env.*
 !.env.example
+!.env.render.example
+!.env.vercel.example
 
 # Editor directories and files
 .vscode/*

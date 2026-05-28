@@ -27,7 +27,7 @@ Required environment variables:
 Use `.env.render.example` as the checklist for Render. The Neon database value should use this host:
 
 ```text
-ep-nameless-sun-aoma7gap-pooler.c-2.ap-southeast-1.aws.neon.tech
+ep-sparkling-unit-aob53h94-pooler.c-2.ap-southeast-1.aws.neon.tech
 ```
 
 Keep the full database URL in Render's Environment tab. Do not commit the real password to this repository.
@@ -41,7 +41,7 @@ node server/apply-schema.mjs
 Then verify:
 
 ```sh
-curl https://YOUR-RENDER-SERVICE.onrender.com/api/health
+curl https://lis-website.onrender.com/api/health
 ```
 
 Expected response:
@@ -60,11 +60,11 @@ Use these settings:
 
 Set this Vercel environment variable:
 
-- `VITE_API_BASE_URL=https://YOUR-RENDER-SERVICE.onrender.com`
+- `VITE_API_BASE_URL=https://lis-website.onrender.com`
 
 Use `.env.vercel.example` as the checklist for Vercel. The frontend does not connect to PostgreSQL directly; it calls the Render API. Keep `DATABASE_URL`, `JWT_SECRET`, `ADMIN_USERNAME`, and `ADMIN_PASSWORD` on Render only unless you later add Vercel serverless API routes.
 
-If you prefer to keep `VITE_API_BASE_URL` empty, `vercel.json` already rewrites `/api/*` to the current Render service URL: `https://lisacademy-api.onrender.com`.
+If you prefer to keep `VITE_API_BASE_URL` empty, `vercel.json` already rewrites `/api/*` to the current Render service URL: `https://lis-website.onrender.com`.
 
 After deploying Vercel, test the frontend from the browser. If you are using the `vercel.json` rewrite instead of `VITE_API_BASE_URL`, you can also test:
 

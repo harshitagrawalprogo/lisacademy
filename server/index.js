@@ -308,7 +308,16 @@ function generateApplicationId(membershipNumber) {
   return `APP/${membershipNumber}`;
 }
 
-app.get("/api/health", (_req, res) => {
+app.get("/api/health", async (_req, res) => {
+  try {
+    await sql`SELECT 1 FROM members LIMIT 1`;
+    databaseReady = true;
+    databaseStartupError = null;
+  } catch (error) {
+    databaseReady = false;
+    databaseStartupError = error;
+  }
+
   res.json({
     ok: true,
     databaseReady,
